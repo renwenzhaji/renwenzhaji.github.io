@@ -1,0 +1,54 @@
+# 《人文札记》robots.txt
+# 策略：搜索引擎欢迎收录；生成式 AI 的训练／内容采集不授权。
+# 说明：robots 是「声明式」约定，守规的爬虫会遵守，恶意爬虫不会——它表达的是态度，不是技术封锁。
+
+User-agent: *
+Allow: /
+
+# —— 搜索引擎（欢迎收录）——
+User-agent: Baiduspider
+Allow: /
+User-agent: Googlebot
+Allow: /
+User-agent: Bingbot
+Allow: /
+User-agent: Sogou web spider
+Allow: /
+User-agent: 360Spider
+Allow: /
+
+# —— 生成式 AI：训练与内容采集不授权 ——
+User-agent: GPTBot
+Disallow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: Applebot-Extended
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: anthropic-ai
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+User-agent: Meta-ExternalAgent
+Disallow: /
+User-agent: Amazonbot
+Disallow: /
+User-agent: cohere-ai
+Disallow: /
+User-agent: PerplexityBot
+Disallow: /
+User-agent: YouBot
+Disallow: /
+User-agent: Diffbot
+Disallow: /
+User-agent: ImagesiftBot
+Disallow: /
+User-agent: Omgilibot
+Disallow: /
+
+Sitemap: https://renwenzhaji.github.io/sitemap.xml
