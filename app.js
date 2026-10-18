@@ -427,6 +427,16 @@ if(overlay&&w.SITE){
   var INDEX=((SITE.articles||[]).concat(SITE.essays||[])).map(function(a){
     return {slug:a.slug,title:a.title,cat:a.cat,date:a.date,tags:a.tags,stand:a.stand,url:ROOT+a.url,text:a.text||""};
   });
+  var loadingText=false;
+  var ensureText=function(){
+    if(w.SITE_TEXT||loadingText)return;
+    loadingText=true;
+    var sc=document.createElement("script");
+    sc.src=ROOT+"data-text.js";
+    sc.onload=function(){INDEX.forEach(function(x){x.text=(w.SITE_TEXT&&w.SITE_TEXT[x.slug])||"";});};
+    document.head.appendChild(sc);
+  };
+  ["focus","input"].forEach(function(ev){if(sInput)sInput.addEventListener(ev,ensureText);});
   var SPECIALS={"\\":"\\\\","(":"\\(",")":"\\)","[":"\\[","]":"\\]","{":"\\{","}":"\\}","*":"\\*","+":"\\+","?":"\\?",".":"\\.","|":"\\|","^":"\\^","$":"\\$"};
   var reEsc=function(k){var o="";for(var i=0;i<k.length;i++){var c=k.charAt(i);o+=(SPECIALS[c]||c);}return o;};
   var hl=function(s,keys){
