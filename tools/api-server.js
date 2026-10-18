@@ -2,20 +2,42 @@ const http=require('http');
 const fs=require('fs');
 const FILE='/var/lib/rwzj/messages.json';
 const PORT=8081;
+const ADMIN='rwzj-adm-7c41e9b2';
 const ALLOWED=['https://renwenzhaji.cn','http://renwenzhaji.cn','https://www.renwenzhaji.cn','http://106.54.209.53'];
-function cors(req,res){var o=req.headers.origin;if(o&&ALLOWED.indexOf(o)>=0){res.setHeader('Access-Control-Allow-Origin',o);res.setHeader('Vary','Origin');}res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type');}
+function cors(req,res){var o=req.headers.origin;if(o&&ALLOWED.indexOf(o)>=0){res.setHeader('Access-Control-Allow-Origin',o);res.setHeader('Vary','Origin');}res.setHeader('Access-Control-Allow-Methods','GET,POST,DELETE,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type,X-Admin-Token');}
 function readAll(){try{var a=JSON.parse(fs.readFileSync(FILE,'utf8'));return Array.isArray(a)?a:[];}catch(e){return [];}}
 function writeAll(a){fs.writeFileSync(FILE,JSON.stringify(a,null,1));}
+function isAdmin(req){return String(req.headers['x-admin-token']||'')===ADMIN;}
 var rate=new Map();
 http.createServer(function(req,res){
  cors(req,res);
  if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
- if(req.url.indexOf('/list')===0&&req.method==='GET'){
-  var a=readAll().slice(-200).map(function(m){return {name:m.name,text:m.text,time:m.time};});
-  res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+ var url=req.url.split('?')[0];
+ if(url==='/list'&&req.method==='GET'){
+  var all=req.url.indexOf('all=1')>0&&isAdmin(req);
+  var a=readAll().slice(-300).map(function(m){
+   return all?{id:m.id,name:m.name,text:m.text,time:m.time}:{name:m.name,text:m.text,time:m.time};
+  });
+  res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
   return res.end(JSON.stringify(a));
  }
- if(req.url.indexOf('/post')===0&&req.method==='POST'){
+ if(url==='/del'&&req.method==='POST'){
+  if(!isAdmin(req)){res.writeHead(401,{'Content-Type':'application/json'});return res.end('{"error":"auth"}');}
+  var b='';
+  req.on('data',function(c){b+=c;if(b.length>2000)req.destroy();});
+  req.on('end',function(){
+   var d={};try{d=JSON.parse(b);}catch(e){}
+   var id=String(d.id||'');
+   var list=readAll();
+   var n=list.length;
+   list=list.filter(function(m){return String(m.id)!==id;});
+   writeAll(list);
+   res.writeHead(200,{'Content-Type':'application/json'});
+   res.end(JSON.stringify({ok:true,removed:n-list.length}));
+  });
+  return;
+ }
+ if(url==='/post'&&req.method==='POST'){
   var body='';
   req.on('data',function(c){body+=c;if(body.length>4000)req.destroy();});
   req.on('end',function(){
@@ -29,7 +51,7 @@ http.createServer(function(req,res){
    if(now-last<60000){res.writeHead(429,{'Content-Type':'application/json'});return res.end('{"error":"slow"}');}
    rate.set(ip,now);
    var list=readAll();
-   list.push({name:name,text:text,time:new Date().toISOString()});
+   list.push({id:'m'+now,name:name,text:text,time:new Date().toISOString()});
    writeAll(list);
    res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
    res.end(JSON.stringify({ok:true}));
@@ -37,4 +59,4 @@ http.createServer(function(req,res){
   return;
  }
  res.writeHead(404,{'Content-Type':'text/plain'});res.end('not found');
-}).listen(PORT,'127.0.0.1',function(){console.log('rwzj-api listening on '+PORT);});
+}).listen(PORT,'127.0.0.1',function(){console.log('rwzj-api on '+PORT);});

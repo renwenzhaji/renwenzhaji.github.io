@@ -1,0 +1,43 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>留言管理</title>
+<style>body{font-family:system-ui,-apple-system,"Noto Sans SC",sans-serif;background:#F6F4EF;color:#22201C;margin:0;padding:20px;line-height:1.7}
+h1{font-size:1.2rem;margin:0 0 14px}.bar{display:flex;gap:8px;margin-bottom:16px}
+input{flex:1;padding:10px;border:1px solid #d8d2c4;border-radius:8px;font-size:15px;background:#fff}
+button{padding:10px 16px;border:0;border-radius:8px;background:#A8402A;color:#fff;font-size:15px}
+button.ghost{background:transparent;color:#A8402A;border:1px solid #A8402A}
+.item{background:#fff;border:1px solid #e6e0d4;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.meta{font-size:.8rem;color:#8a8377;margin:0 0 6px}.txt{margin:0 0 8px;white-space:pre-wrap}
+.empty{color:#8a8377;text-align:center;padding:30px 0}</style></head><body>
+<h1>留言管理</h1>
+<div class="bar"><input id="tok" type="password" placeholder="管理口令" autocomplete="off"><button id="load">载入</button></div>
+<div id="list"><p class="empty">输入口令后点载入</p></div>
+<script>
+var L=document.getElementById("list"),T=document.getElementById("tok");
+T.value=localStorage.getItem("rwzj_admin")||"";
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+function load(){
+ var t=T.value.trim(); localStorage.setItem("rwzj_admin",t);
+ fetch("api/list?all=1",{headers:{"X-Admin-Token":t},cache:"no-store"}).then(function(r){
+  if(r.status===401)throw new Error("口令不对");
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return r.json();
+ }).then(function(a){
+  if(!a.length){L.innerHTML='<p class="empty">还没有留言</p>';return;}
+  L.innerHTML=a.slice().reverse().map(function(m){
+   var d=new Date(m.time),ds=d.getFullYear()+"."+("0"+(d.getMonth()+1)).slice(-2)+"."+("0"+d.getDate()).slice(-2)+" "+("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2);
+   return '<div class="item"><p class="meta">'+esc(m.name)+" · "+ds+'</p><p class="txt">'+esc(m.text)+'</p><button class="ghost" data-id="'+esc(m.id)+'">删除</button></div>';
+  }).join("");
+ }).catch(function(e){L.innerHTML='<p class="empty">'+esc(e.message)+"</p>";});
+}
+document.getElementById("load").addEventListener("click",load);
+L.addEventListener("click",function(e){
+ var b=e.target.closest("button[data-id]");if(!b)return;
+ if(!confirm("确定删除这条留言？"))return;
+ fetch("api/del",{method:"POST",headers:{"Content-Type":"application/json","X-Admin-Token":T.value.trim()},body:JSON.stringify({id:b.getAttribute("data-id")})})
+  .then(function(r){if(!r.ok)throw new Error("删除失败");return r.json();})
+  .then(function(){load();}).catch(function(err){alert(err.message);});
+});
+if(T.value)load();
+</script></body></html>
