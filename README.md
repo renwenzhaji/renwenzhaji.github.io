@@ -3,7 +3,7 @@
 一个面向读者的中文社会科学网站：八门学科、四个系列、一个专题。
 纯静态手排，无跟踪、无广告、无第三方脚本。
 
-- 网址：https://renwenzhaji.github.io/
+- 网址：https://renwenzhaji.cn/
 - 许可：CC BY-NC-SA 4.0（见 LICENSE）
 - 订阅：RSS 全文输出 `rss.xml`
 

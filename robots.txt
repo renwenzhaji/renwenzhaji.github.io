@@ -51,4 +51,4 @@ Disallow: /
 User-agent: Omgilibot
 Disallow: /
 
-Sitemap: https://renwenzhaji.github.io/sitemap.xml
+Sitemap: https://renwenzhaji.cn/sitemap.xml
