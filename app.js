@@ -123,19 +123,40 @@ var sb=$("#share-btn");
 if(sb){
   sb.addEventListener("click",function(){copyText(location.href,"链接已复制，去分享吧",function(t){showCopyBox(sb,t,"文章链接");});});
 }
-/* 引用格式：作者：《篇名》，《人文札记》，年月日。链接（访问于 日期） */
+/* 引用格式：可切换 默认 / GB/T 7714 / APA */
 var cb=$("#cite-btn");
 if(cb){
-  cb.addEventListener("click",function(){
+  cb.addEventListener("click",function(ev){
+    ev.preventDefault();
     var slug=(location.pathname.split("/").pop()||"").replace(/\.html$/,"");
     var a=null;
     (((w.SITE&&SITE.articles)||[]).concat((w.SITE&&SITE.essays)||[])).forEach(function(x){if(x.slug===slug)a=x;});
     var dd=new Date(),p=function(n){return (n<10?"0":"")+n;};
-    var today=dd.getFullYear()+"-"+p(dd.getMonth()+1)+"-"+p(dd.getDate());
-    var title=a?a.title:(d.title||"").replace(/ · .*$/,"");
+    var today=dd.getFullYear()+"-"+(p(dd.getMonth()+1))+"-"+p(dd.getDate());
+    var title=a?a.title:(document.title||"").replace(/ · .*$/,"");
     var when=a?a.dateCN:"";
-    var cite="洛安：《"+title+"》，《人文札记》，"+when+"。"+location.origin+location.pathname+"（访问于 "+today+"）";
-    copyText(cite,"引用格式已复制："+title,function(t){showCopyBox(cb,t,"引用格式");});
+    var iso=(a&&a.date)?a.date.replace(/\./g,"-"):today;
+    var url=location.origin+location.pathname;
+    var FM=[];
+    FM.push(["默认",("洛安：《"+title+"》，《人文札记》，"+when+"。"+url+"（访问于 "+today+"）")]);
+    FM.push(["GB/T 7714","洛安. "+title+"[EB/OL]. 人文札记, "+iso+". "+url+"."]);
+    FM.push(["APA","洛安. ("+(iso||"").slice(0,4)+"). "+title+". 人文札记. 取自 "+url]);
+    var old=document.querySelector(".cite-menu");
+    if(old)old.parentNode.removeChild(old);
+    var menu=document.createElement("div");
+    menu.className="cite-menu";
+    menu.innerHTML=FM.map(function(f,i){return '<button type="button" data-i="'+i+'">'+f[0]+'</button>';}).join("");
+    document.body.appendChild(menu);
+    var r=cb.getBoundingClientRect();
+    var top=r.bottom+window.scrollY+6, left=Math.min(r.left+window.scrollX, window.innerWidth-210);
+    menu.style.top=top+"px"; menu.style.left=Math.max(8,left)+"px";
+    menu.addEventListener("click",function(e2){
+      var b=e2.target.closest("button[data-i]"); if(!b)return;
+      var i=Number(b.getAttribute("data-i"));
+      copyText(FM[i][1],"已复制："+FM[i][0]+" 格式",function(t){showCopyBox(cb,t,"引用格式");});
+      if(menu.parentNode)menu.parentNode.removeChild(menu);
+    });
+    setTimeout(function(){document.addEventListener("click",function once(e3){if(!menu.contains(e3.target)&&e3.target!==cb){if(menu.parentNode)menu.parentNode.removeChild(menu);}document.removeEventListener("click",once);});},0);
   });
 }
 
@@ -844,4 +865,54 @@ if(fc){
     var on=function(){b.hidden=window.scrollY<900;};
     window.addEventListener("scroll",on,{passive:true});on();
   }catch(e){}
+})();
+
+/* ---------- 提示条：微信内置浏览器 / 加到桌面 ---------- */
+(function(){
+  var KEY="rwzj_tip_seen";
+  var seen=(function(){try{return localStorage.getItem(KEY)||"";}catch(e){return "";}})();
+  var ua=navigator.userAgent||"";
+  var bar=null;
+  function makeBar(html,btnText,onGo){
+    if(bar) return bar;
+    bar=document.createElement("div");
+    bar.className="tipbar";
+    bar.setAttribute("role","status");
+    bar.innerHTML="<p>"+html+"</p>";
+    if(btnText){
+      var b=document.createElement("button");b.className="go";b.textContent=btnText;
+      b.addEventListener("click",function(){try{onGo&&onGo();}catch(e){}bar.parentNode&&bar.parentNode.removeChild(bar);});
+      bar.appendChild(b);
+    }
+    var c=document.createElement("button");c.className="close";c.setAttribute("aria-label","关闭");c.textContent="\u00d7";
+    c.addEventListener("click",function(){try{localStorage.setItem(KEY,"1");}catch(e){}bar.parentNode&&bar.parentNode.removeChild(bar);});
+    bar.appendChild(c);
+    document.body.appendChild(bar);
+    return bar;
+  }
+  var standalone=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+  if(/MicroMessenger/i.test(ua)){
+    if(seen!=="wechat"){
+      var b=makeBar("在浏览器中打开，字号、收藏、夜间模式都能用","知道了",function(){try{localStorage.setItem(KEY,"wechat");}catch(e){}});
+    }
+    return;
+  }
+  var deferred=null;
+  window.addEventListener("beforeinstallprompt",function(e){
+    e.preventDefault();deferred=e;
+    if(seen!=="install"){
+      makeBar("把《人文札记》加到桌面，断网也能读","添加",function(){
+        try{localStorage.setItem(KEY,"install");}catch(e){}
+        if(deferred){deferred.prompt();deferred=null;}
+      });
+    }
+  });
+  var isIOS=/iPad|iPhone|iPod/.test(ua)&&!window.MSStream;
+  if(isIOS&&!standalone&&seen!=="ios"){
+    var shown=false;
+    window.addEventListener("scroll",function(){
+      if(shown||window.scrollY<800)return;shown=true;
+      makeBar("点下方「分享」\u2192「添加到主屏幕」，以后像 App 一样打开","知道了",function(){try{localStorage.setItem(KEY,"ios");}catch(e){}});
+    },{passive:true});
+  }
 })();
