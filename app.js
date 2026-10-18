@@ -916,3 +916,12 @@ if(fc){
     },{passive:true});
   }
 })();
+/* ---------- 极简阅读计数：不记 IP、不记 UA、不种 cookie ---------- */
+(function(){
+  if(!document.querySelector(".art-head")) return;
+  var slug=(location.pathname.split("/").pop()||"").replace(/\.html$/,"");
+  if(!/^[a-z0-9-]{1,40}$/.test(slug)) return;
+  var K="rwzj_hit_"+slug;
+  try{ if(sessionStorage.getItem(K)) return; sessionStorage.setItem(K,"1"); }catch(e){}
+  try{ fetch("api/hit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({slug:slug}),keepalive:true}).catch(function(){}); }catch(e){}
+})();

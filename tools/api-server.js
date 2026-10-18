@@ -1,6 +1,7 @@
 const http=require('http');
 const fs=require('fs');
 const FILE='/var/lib/rwzj/messages.json';
+const HFILE='/var/lib/rwzj/hits.json';
 const PORT=8081;
 const ADMIN=(function(){var t=process.env.RWZJ_ADMIN||'';if(!t){try{t=fs.readFileSync('/var/lib/rwzj/admin-token','utf8').trim();}catch(e){t='';}}return t;})();
 const ALLOWED=['https://renwenzhaji.cn','http://renwenzhaji.cn','https://www.renwenzhaji.cn','http://106.54.209.53'];
@@ -9,6 +10,9 @@ function readAll(){try{var a=JSON.parse(fs.readFileSync(FILE,'utf8'));return Arr
 function writeAll(a){fs.writeFileSync(FILE,JSON.stringify(a,null,1));}
 function isAdmin(req){return ADMIN.length>=8&&String(req.headers['x-admin-token']||'')===ADMIN;}
 var rate=new Map();
+var hrate=new Map();
+function readHits(){try{var o=JSON.parse(fs.readFileSync(HFILE,'utf8'));return (o&&typeof o==='object')?o:{};}catch(e){return {};}}
+function writeHits(o){try{fs.writeFileSync(HFILE,JSON.stringify(o,null,1));}catch(e){}}
 http.createServer(function(req,res){
  cors(req,res);
  if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}
@@ -36,6 +40,28 @@ http.createServer(function(req,res){
    res.end(JSON.stringify({ok:true,removed:n-list.length}));
   });
   return;
+ }
+ if(url==='/hit'&&req.method==='POST'){
+  var hb='';
+  req.on('data',function(c){hb+=c;if(hb.length>400)req.destroy();});
+  req.on('end',function(){
+   var d={};try{d=JSON.parse(hb);}catch(e){}
+   var slug=String(d.slug||'');
+   if(!/^[a-z0-9-]{1,40}$/.test(slug)){res.writeHead(400);return res.end();}
+   var ip=String(req.headers['x-forwarded-for']||req.socket.remoteAddress||'').split(',')[0];
+   var now=Date.now();
+   if(now-(hrate.get(ip)||0)<3000){res.writeHead(204);return res.end();}
+   hrate.set(ip,now);
+   var o=readHits();o[slug]=(Number(o[slug])||0)+1;writeHits(o);
+   res.writeHead(204);res.end();
+  });
+  return;
+ }
+ if(url==='/hits'&&req.method==='GET'){
+  if(!isAdmin(req)){res.writeHead(401,{'Content-Type':'application/json'});return res.end('{"error":"auth"}');}
+  var h=readHits();var total=0;Object.keys(h).forEach(function(k){total+=Number(h[k])||0;});
+  res.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
+  return res.end(JSON.stringify({total:total,items:h}));
  }
  if(url==='/post'&&req.method==='POST'){
   var body='';

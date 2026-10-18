@@ -13,12 +13,20 @@ button.ghost{background:transparent;color:#A8402A;border:1px solid #A8402A}
 <h1>留言管理</h1>
 <div class="bar"><input id="tok" type="password" placeholder="管理口令" autocomplete="off"><button id="load">载入</button></div>
 <div id="list"><p class="empty">输入口令后点载入</p></div>
+<h1 style="margin-top:26px">阅读计数</h1>
+<div id="hits"><p class="empty">—</p></div>
 <script>
 var L=document.getElementById("list"),T=document.getElementById("tok");
 T.value=localStorage.getItem("rwzj_admin")||"";
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+function loadHits(t){fetch("api/hits",{headers:{"X-Admin-Token":t},cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){
+  var box=document.getElementById("hits"),ks=Object.keys(d.items||{});
+  ks.sort(function(a,b){return d.items[b]-d.items[a];});
+  if(!ks.length){box.innerHTML='<p class="empty">还没有访问计数</p>';return;}
+  box.innerHTML='<p class="meta">合计 '+d.total+' 次</p>'+ks.map(function(k){return '<div class="item" style="padding:8px 12px"><span style="float:right;font-variant-numeric:tabular-nums">'+d.items[k]+'</span>'+esc(k)+'</div>';}).join("");
+ }).catch(function(){document.getElementById("hits").innerHTML='<p class="empty">口令不对或无数据</p>';});}
 function load(){
- var t=T.value.trim(); localStorage.setItem("rwzj_admin",t);
+ var t=T.value.trim(); localStorage.setItem("rwzj_admin",t); loadHits(t);
  fetch("api/list?all=1",{headers:{"X-Admin-Token":t},cache:"no-store"}).then(function(r){
   if(r.status===401)throw new Error("口令不对");
   if(!r.ok)throw new Error("HTTP "+r.status);
