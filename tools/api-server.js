@@ -2,12 +2,12 @@ const http=require('http');
 const fs=require('fs');
 const FILE='/var/lib/rwzj/messages.json';
 const PORT=8081;
-const ADMIN='rwzj-adm-7c41e9b2';
+const ADMIN=(function(){var t=process.env.RWZJ_ADMIN||'';if(!t){try{t=fs.readFileSync('/var/lib/rwzj/admin-token','utf8').trim();}catch(e){t='';}}return t;})();
 const ALLOWED=['https://renwenzhaji.cn','http://renwenzhaji.cn','https://www.renwenzhaji.cn','http://106.54.209.53'];
 function cors(req,res){var o=req.headers.origin;if(o&&ALLOWED.indexOf(o)>=0){res.setHeader('Access-Control-Allow-Origin',o);res.setHeader('Vary','Origin');}res.setHeader('Access-Control-Allow-Methods','GET,POST,DELETE,OPTIONS');res.setHeader('Access-Control-Allow-Headers','Content-Type,X-Admin-Token');}
 function readAll(){try{var a=JSON.parse(fs.readFileSync(FILE,'utf8'));return Array.isArray(a)?a:[];}catch(e){return [];}}
 function writeAll(a){fs.writeFileSync(FILE,JSON.stringify(a,null,1));}
-function isAdmin(req){return String(req.headers['x-admin-token']||'')===ADMIN;}
+function isAdmin(req){return ADMIN.length>=8&&String(req.headers['x-admin-token']||'')===ADMIN;}
 var rate=new Map();
 http.createServer(function(req,res){
  cors(req,res);
