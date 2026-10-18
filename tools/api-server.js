@@ -29,7 +29,7 @@ http.createServer(function(req,res){
    if(now-last<60000){res.writeHead(429,{'Content-Type':'application/json'});return res.end('{"error":"slow"}');}
    rate.set(ip,now);
    var list=readAll();
-   list.push({name:name,text:text,time:new Date().toISOString(),ip:ip});
+   list.push({name:name,text:text,time:new Date().toISOString()});
    writeAll(list);
    res.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
    res.end(JSON.stringify({ok:true}));
