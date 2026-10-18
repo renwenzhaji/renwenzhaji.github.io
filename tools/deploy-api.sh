@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 export DEBIAN_FRONTEND=noninteractive
-apt-get install -y nodejs curl >/dev/null 2>&1 || { apt-get update -y >/dev/null 2>&1; apt-get install -y nodejs curl >/dev/null 2>&1; }
+apt-get update -y >/dev/null 2>&1 || true
+apt-get install -y nginx nodejs curl unzip >/dev/null 2>&1 || true
 mkdir -p /opt/rwzj-api /var/lib/rwzj /var/www/admin
 curl -fsSL -o /opt/rwzj-api/server.js https://renwenzhaji.cn/tools/api-server.js
 curl -fsSL -o /var/www/admin/index.html https://renwenzhaji.cn/tools/admin.html
@@ -19,3 +20,4 @@ systemctl reload nginx
 sleep 1
 curl -fsS http://127.0.0.1:8081/list >/dev/null && echo API_OK
 echo "==== 管理口令（保存好，只显示这一次）：$(cat /var/lib/rwzj/admin-token) ===="
+curl -fsSL https://renwenzhaji.cn/tools/update-all.sh | bash || echo "站点同步失败，可稍后单独重跑 update-all.sh"
