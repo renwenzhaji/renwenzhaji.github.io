@@ -47,6 +47,10 @@
 <p class="page-sub">按下寄出后会跳到 FormSubmit 的确认页，内容随即到编者邮箱。一般一周内回；没回音可以再寄一次。</p>
 <h2 class="sec-h" id="letters"><span class="no">附</span>已公开的来信</h2>
 <aside class="note" id="letters-empty"><p>还没有公开的来信。你写第一封也行。</p></aside>
+<div id="gb-live" hidden>
+<h3 style="font-size:1.05rem;margin:1.6rem 0 .6rem">公开留言</h3>
+<div id="gb-list"></div>
+</div>
 <p class="page-sub">本站不记录 IP、不加访问统计、不嵌入第三方评论系统。想聊更长的，可以走 <a href="submit.html">投稿</a>。</p>
 </div>
 </main>
@@ -58,5 +62,35 @@
 <script src="data.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
+
+<script>
+(function(){
+ var wrap=document.getElementById("gb-live"), list=document.getElementById("gb-list"), form=document.querySelector("form.gb-form");
+ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
+ fetch("api/list",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(a){
+  wrap.hidden=false;
+  if(!a.length){list.innerHTML='<p class="page-sub">还没有公开留言，你可以写第一条。</p>';return;}
+  list.innerHTML=a.slice().reverse().map(function(m){
+   var d=new Date(m.time);
+   var ds=d.getFullYear()+"."+("0"+(d.getMonth()+1)).slice(-2)+"."+("0"+d.getDate()).slice(-2);
+   return '<div style="padding:.7rem 0;border-top:1px solid rgba(0,0,0,.08)"><p style="margin:0 0 .3rem">'+esc(m.text)+'</p><p class="page-sub" style="margin:0;font-size:.82em;opacity:.7">'+esc(m.name)+" · "+ds+"</p></div>";
+  }).join("");
+ }).catch(function(){});
+ if(form && window.fetch){
+  var sent=false;
+  form.addEventListener("submit",function(e){
+   if(sent) return;
+   var t=form.querySelector("textarea"), n=form.querySelector('input[name="称呼"]');
+   if(!t||!t.value) return;
+   e.preventDefault();
+   sent=true;
+   fetch("api/post",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:n?n.value:"",text:t.value})})
+    .then(function(r){if(!r.ok)throw 0;return r.json();})
+    .then(function(){alert("已经贴出去了。");location.reload();})
+    .catch(function(){sent=false;form.submit();});
+  });
+ }
+})();
+</script>
 </body>
 </html>
