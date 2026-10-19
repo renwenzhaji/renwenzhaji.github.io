@@ -537,3 +537,8 @@ details.toc-m a .no{color:var(--seal);margin-right:.5em}
 .cite-menu button:hover{background:#F2EEE4}
 html[data-theme=dark] .cite-menu{background:#24211d;border-color:#3a352d}
 html[data-theme=dark] .cite-menu button:hover{background:#2f2b25}
+
+/* 整张卡片可点击：标题链接铺满卡片，但让分类/标签 chip 保持在上面 */
+.title-link::after{content:"";position:absolute;inset:0;z-index:1}
+.card .chip{position:relative;z-index:2}
+.card:hover .title-link::after{background:transparent}
